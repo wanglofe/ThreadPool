@@ -24,7 +24,6 @@ typedef struct threadpool {
 } threadpool_t;
 
 
-
 threadpool_t *tp = NULL;
 static void *thread_func(void *arg);
 
@@ -44,37 +43,24 @@ static void print_jobarg(job_t *job)
 void threadpool_addjob(job_t *job)
 {
 	DEBUG("Add job: %s\n", (char*)job->arg);
+	job_t *newjob = tp->job_header;
+	newjob->arg = job->arg;
+	newjob->handler = job->handler;
+	newjob->next = NULL;
+
 	pthread_mutex_lock(&mutex);
 	if(tp->job_header == NULL) {
 		printf("111111111\n");
-		tp->job_header = malloc(sizeof(job_t));
-		tp->job_header->arg = job->arg;	
-		tp->job_header->handler = job->handler;	
-		tp->job_header->next = NULL;	
+		tp->job_header = newjob;
 	} else {
 		printf("9999999999\n");
-#if 0
 		job_t *tmp = tp->job_header;
 		while(tmp->next) {
-			printf("++++%s\n", (char*)tmp->arg);
 			tmp->next = tmp->next->next;	
 		}	
-		tmp->next = malloc(sizeof(job_t));		
-		tmp->next->arg = job->arg;
-		tmp->next->handler = job->handler;
-		tmp->next->next = NULL;
-#endif
-		job_t *newjob = malloc(sizeof(job_t));
-		newjob->arg = job->arg;
-		newjob->handler = job->handler;
-		newjob->next = NULL;
-		job_t *i;
-		for(i=tp->job_header; i->next!= NULL; i=i->next);
-		i->next = newjob;
-		
+		tmp->next = newjob;
 	}
 	pthread_mutex_unlock(&mutex);
-	print_jobarg(tp->job_header);
 }
 
 static void *thread_func(void *arg)
@@ -121,7 +107,7 @@ int main(void)
 	threadpool_create(5);	
 	job_t job[10];
 	int i;
-	for(i=0; i<5; i++) {
+	for(i=0; i<8; i++) {
 		job[i].handler = ( void*(*)(void*) )printf;
 		char buf[128];	
 		sprintf(buf, "job %d handle\n", i); 	
@@ -130,7 +116,7 @@ int main(void)
 	}
 
 	printf("----------------\n");
-//	print_jobarg(tp->job_header);
+	print_jobarg(tp->job_header);
 
 	sleep(3);
 	return 0;
